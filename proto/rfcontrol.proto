@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package rfcontrol;
+
+service RFController {
+    rpc SetRFSettings (RFConfig) returns (RFResponse) {}
+    rpc GetCurrentSettings (DeviceQuery) returns (CurrentSettings) {}
+}
+
+message RFConfig {
+    string device_id = 1;
+    double frequency = 2;
+    double gain = 3;
+}
+
+message DeviceQuery {
+    string device_id = 1;
+}
+
+message RFResponse {
+    bool success = 1;
+    string message = 2;
+    string device_status = 3;
+}
+
+message CurrentSettings {
+    string device_id = 1;
+    double current_frequency = 2;
+    double current_gain = 3;
+    string status_message = 4;
+}
