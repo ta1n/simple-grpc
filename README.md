@@ -1,34 +1,73 @@
 # Overview
-This project is a gRPC based server-client implementation which simulates controlling RF equipment using VISA.
+A gRPC based server–client project that simulates controlling RF equipment using VISA. The server is written in C++, while the client is in Python, to demonstrate language agnostic interoperability.
 
-- **gRPC Server (C++)**: Handles device configuration and status queries
-	+  **VISA Integration**: Supports real hardware or simulation mode
-- **Python Client**: Provides  interface for RF control
-    
+---
+## 🔍 Overview
 
-## Features
+- **gRPC Server (C++)**  
+  Hosts the RF “equipment” logic.  
+  - **VISA Integration**:  
+    - Real Hardware Mode (uses actual VISA libraries)  
+    - Simulation Mode (in-memory device state; auto-fall-back when VISA can not connect)  
 
-- Configure RF parameters (frequency, gain) via gRPC
-    
-- Query current device status
+- **Python Client**  
+  Interactive CLI for configuring and querying RF devices over gRPC.
+
+---
 
 
-# Quick Start
+## ✨ Features
 
-Run the server: 
+- **Configure RF Parameters**  
+  Set device frequency (Hz) and gain (dB) via gRPC calls.  
+- **Query Device Status**  
+  Retrieve current settings and operational status.  
+- **Simulation Mode**  
+  Automatic when VISA libraries are missing—logs commands and holds state in memory.
+
+---
+
+## 🛠️ Requirements
+
+- Docker & Docker Compose ≥ 28.0.1  
+- Python ≥ 3.10.12  
+- GCC ≥ 11.4.0  
+
+---
+
+
+## 🚀 Quick Start (For linux based OS)
+
+1. **Clone the repository**  
+   ```bash
+   git clone https://github.com/ta1n/simple-grpc.git
+   cd simple-grpc
+   ```
+
+2. Run the Server
+
 ```bash
-
-git clone https://github.com/ta1n/simple-grpc
-docker compose up
-
+docker compose up --build
 ```
 
-Run the client:
-```bash
+  This will:
 
+    Build and launch the C++ gRPC server
+
+    Expose the server on the configured gRPC port
+
+![Server](media/server.png)
+
+
+3. Run the client 
+In a new terminal (inside the project root):
+
+```bash
 python client/client.py
 
 ```
+![Client](media/client.png)
+
 
 ### Using the Client Interface
 
@@ -70,18 +109,43 @@ Status: Device active
 ```
 
 
-## Hardware Integration
+## NI-Visa Integration
 
-Supports two operation modes:
+### Real Device and simulation mode
+Code need to be implemented to use a real device, here a simple simulation of command has been done.
 
-1. **Real Hardware Mode**
-        
-2. **Simulation Mode**:
-    
-    - Automatically activated if VISA libraries not found
-        
-    - Maintains device state in memory
-        
-    - Logs all commands that would be sent to hardware
+Constructor & Mode Selection
+```cpp
+VISAHandler::VISAHandler()
+  : resource_manager(0),
+    device_session(0),
+    use_simulation(true),
+    current_freq(0),
+    current_gain(0)
+{
+    // Try to open the VISA Resource Manager
+    if (viOpenDefaultRM(&resource_manager) != VI_SUCCESS) {
+        std::cerr << "Using simulation mode\n";
+        use_simulation = true;
+    }
+}
+```
+
+
+- To Set RF frequency via a custom command, we used SetRFSettings. 
+
+- To simulate standard SCPI query `*IDN?` we used GetCurrentSettings which returns the device/equipment info 
+that is configured via SetRFSettings. 
+
+
+
+### Service in rfcontrol.proto:
+
+```proto
+service RFController {
+    rpc SetRFSettings (RFConfig) returns (RFResponse) {}
+    rpc GetCurrentSettings (DeviceQuery) returns (CurrentSettings) {}
+}
+```
 
 
